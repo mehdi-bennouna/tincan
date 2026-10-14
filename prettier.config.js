@@ -1,0 +1,30 @@
+//  @ts-check
+
+/** @type {import('prettier').Config} */
+const config = {
+	useTabs: true,
+	arrowParens: "always",
+	bracketSpacing: true,
+	printWidth: 140,
+	proseWrap: "always",
+	quoteProps: "consistent",
+	semi: true,
+	singleQuote: false,
+	trailingComma: "all",
+	endOfLine: "lf",
+	tabWidth: 4,
+	importOrder: [
+		"<BUILTIN_MODULES>",
+		"<THIRD_PARTY_MODULES>",
+		"^@repo/(.*)$",
+		"^@/",
+		"^\\.\\./",
+		"^\\.(?!.*/index$)(?!^\\.$)(?!^\\./$)\\/.+$",
+		"^\\.(/index)?$",
+	],
+	importOrderTypeScriptVersion: "6.0.0",
+	importOrderCaseSensitive: false,
+	plugins: ["@ianvs/prettier-plugin-sort-imports", "prettier-plugin-packagejson"],
+};
+
+export default config;
