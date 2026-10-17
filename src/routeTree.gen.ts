@@ -8,77 +8,79 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as IndexRouteImport } from "./routes/index";
-import type { createStart } from "@tanstack/react-start";
-import type { getRouter } from "./router.tsx";
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as ChannelsChannelIdRouteImport } from "./routes/channels/$channelId";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChannelsChannelIdRouteImport } from './routes/channels/$channelId'
 
 const IndexRoute = IndexRouteImport.update({
-	id: "/",
-	path: "/",
-	getParentRoute: () => rootRouteImport,
-} as any);
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChannelsChannelIdRoute = ChannelsChannelIdRouteImport.update({
-	id: "/channels/$channelId",
-	path: "/channels/$channelId",
-	getParentRoute: () => rootRouteImport,
-} as any);
+  id: '/channels/$channelId',
+  path: '/channels/$channelId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
-	"/": typeof IndexRoute;
-	"/channels/$channelId": typeof ChannelsChannelIdRoute;
+  '/': typeof IndexRoute
+  '/channels/$channelId': typeof ChannelsChannelIdRoute
 }
 export interface FileRoutesByTo {
-	"/": typeof IndexRoute;
-	"/channels/$channelId": typeof ChannelsChannelIdRoute;
+  '/': typeof IndexRoute
+  '/channels/$channelId': typeof ChannelsChannelIdRoute
 }
 export interface FileRoutesById {
-	"__root__": typeof rootRouteImport;
-	"/": typeof IndexRoute;
-	"/channels/$channelId": typeof ChannelsChannelIdRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/channels/$channelId': typeof ChannelsChannelIdRoute
 }
 export interface FileRouteTypes {
-	fileRoutesByFullPath: FileRoutesByFullPath;
-	fullPaths: "/" | "/channels/$channelId";
-	fileRoutesByTo: FileRoutesByTo;
-	to: "/" | "/channels/$channelId";
-	id: "__root__" | "/" | "/channels/$channelId";
-	fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/channels/$channelId'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/channels/$channelId'
+  id: '__root__' | '/' | '/channels/$channelId'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-	IndexRoute: typeof IndexRoute;
-	ChannelsChannelIdRoute: typeof ChannelsChannelIdRoute;
+  IndexRoute: typeof IndexRoute
+  ChannelsChannelIdRoute: typeof ChannelsChannelIdRoute
 }
 
-declare module "@tanstack/react-router" {
-	interface FileRoutesByPath {
-		"/": {
-			id: "/";
-			path: "/";
-			fullPath: "/";
-			preLoaderRoute: typeof IndexRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-		"/channels/$channelId": {
-			id: "/channels/$channelId";
-			path: "/channels/$channelId";
-			fullPath: "/channels/$channelId";
-			preLoaderRoute: typeof ChannelsChannelIdRouteImport;
-			parentRoute: typeof rootRouteImport;
-		};
-	}
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/channels/$channelId': {
+      id: '/channels/$channelId'
+      path: '/channels/$channelId'
+      fullPath: '/channels/$channelId'
+      preLoaderRoute: typeof ChannelsChannelIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-	IndexRoute: IndexRoute,
-	ChannelsChannelIdRoute: ChannelsChannelIdRoute,
-};
-export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>();
+  IndexRoute: IndexRoute,
+  ChannelsChannelIdRoute: ChannelsChannelIdRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
-declare module "@tanstack/react-start" {
-	interface Register {
-		ssr: true;
-		router: Awaited<ReturnType<typeof getRouter>>;
-	}
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
 }
