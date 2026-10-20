@@ -1,9 +1,5 @@
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "#/components/ui/card.tsx";
-
-const peers = [
-	{ id: "1", name: "Azpect" },
-	{ id: "2", name: "Bob" },
-];
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.tsx";
+import { type ChannelStore } from "#/providers/channel-provider.tsx";
 
 function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
 	return (
@@ -14,7 +10,7 @@ function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
 	);
 }
 
-export function PeersList() {
+export function PeersList({ peers }: Readonly<{ peers: ChannelStore["peers"] }>) {
 	return (
 		<Card className="flex h-full flex-col gap-0">
 			<CardHeader className="border-b">
@@ -22,12 +18,10 @@ export function PeersList() {
 			</CardHeader>
 
 			<CardContent className="min-h-0 flex-1 p-0">
-				{peers.map(({ id, name }) => (
-					<Peer key={id} id={id} name={name} />
+				{Object.entries(peers).map(([id, p]) => (
+					<Peer key={id} id={id} name={p.name} />
 				))}
 			</CardContent>
-
-			<CardFooter className="h-16 bg-card"></CardFooter>
 		</Card>
 	);
 }

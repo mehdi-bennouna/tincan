@@ -24,6 +24,7 @@
 		"@tanstack/react-router-devtools": "1.167.2",
 		"@tanstack/react-start": "1.169.1",
 		"@trystero-p2p/nostr": "^0.26.0",
+		"@trystero-p2p/supabase": "^0.26.0",
 		"arktype": "^2.2.8",
 		"class-variance-authority": "^0.7.1",
 		"cn": "^0.4.0",

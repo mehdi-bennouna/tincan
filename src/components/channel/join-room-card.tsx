@@ -7,9 +7,8 @@ import { Input } from "#/components/ui/input.tsx";
 import { type } from "arktype";
 
 const RoomFormSchema = type({
-	roomId: "string > 0",
+	channelId: "string > 0",
 	peerName: "string > 0",
-	password: "string > 0",
 });
 
 export function JoinRoomCard() {
@@ -17,17 +16,16 @@ export function JoinRoomCard() {
 
 	const form = useForm({
 		defaultValues: {
-			roomId: "",
+			channelId: "",
 			peerName: "",
-			password: "",
 		},
 		validators: {
 			onSubmit: RoomFormSchema,
 		},
 		onSubmit: ({ value }) => {
 			navigate({
-				to: `/channels/${value.roomId}`,
-				search: { roomId: value.roomId, peerName: value.peerName, password: value.password },
+				to: `/channels/${value.channelId}`,
+				search: { channelId: value.channelId, selfPeerName: value.peerName },
 			});
 		},
 	});
@@ -44,13 +42,13 @@ export function JoinRoomCard() {
 					<FieldGroup>
 						<FieldGroup>
 							<form.Field
-								name={"roomId"}
+								name={"channelId"}
 								children={(field) => {
 									const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
 									return (
 										<Field>
-											<FieldLabel htmlFor={field.name}>Room ID</FieldLabel>
+											<FieldLabel htmlFor={field.name}>Channel ID</FieldLabel>
 											<Input
 												id={field.name}
 												name={field.name}
@@ -74,29 +72,6 @@ export function JoinRoomCard() {
 									return (
 										<Field>
 											<FieldLabel htmlFor={field.name}>Username</FieldLabel>
-											<Input
-												id={field.name}
-												name={field.name}
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={(e) => field.handleChange(e.target.value)}
-												aria-invalid={isInvalid}
-												autoComplete="off"
-											/>
-											{isInvalid && <FieldError errors={field.state.meta.errors} />}
-										</Field>
-									);
-								}}
-							/>
-
-							<form.Field
-								name={"password"}
-								children={(field) => {
-									const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-
-									return (
-										<Field>
-											<FieldLabel htmlFor={field.name}>Password</FieldLabel>
 											<Input
 												id={field.name}
 												name={field.name}

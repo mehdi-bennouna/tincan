@@ -9,7 +9,7 @@ export type ChannelPeer = {
 export type BaseMessage = {
 	id: string;
 	authorId: string;
-	timestamp: string;
+	timestamp: number;
 };
 
 export type TextMessage = BaseMessage & {
@@ -31,11 +31,12 @@ export type ChannelMessage = TextMessage | FileMessage;
 
 export type ChannelStore = {
 	id: string;
-	peers: Array<ChannelPeer>;
+	peers: Record<string, ChannelPeer>;
 	messages: Array<ChannelMessage>;
 
-	addPeer: (peer: ChannelPeer) => void;
+	upsertPeer: (peerId: string, peer: ChannelPeer) => void;
 	removePeer: (peerId: string) => void;
+	addMessage: (messageId: ChannelMessage) => void;
 };
 
 type ChannelInit = { id: string };
@@ -43,14 +44,20 @@ type ChannelInit = { id: string };
 function createChannelStore({ id }: ChannelInit) {
 	return createStore<ChannelStore>()((set) => ({
 		id,
-		peers: [],
+		peers: {},
 		messages: [],
 
-		addPeer: (peer: ChannelPeer) => {
-			set((s) => (s.peers.some((p) => p.id === peer.id) ? s : { peers: [...s.peers, peer] }));
+		upsertPeer: (peerId, peer) => {
+			set((s) => ({ peers: { ...s.peers, [peerId]: peer } }));
 		},
 		removePeer: (peerId) => {
-			set((s) => ({ peers: s.peers.filter((p) => p.id !== peerId) }));
+			set((s) => {
+				const { [peerId]: _, ...rest } = s.peers;
+				return { peers: rest };
+			});
+		},
+		addMessage: (message: ChannelMessage) => {
+			set((s) => ({ ...s, messages: [...s.messages, message] }));
 		},
 	}));
 }
