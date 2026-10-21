@@ -37,12 +37,13 @@ export type ChannelStore = {
 	upsertPeer: (peerId: string, peer: ChannelPeer) => void;
 	removePeer: (peerId: string) => void;
 	addMessage: (messageId: ChannelMessage) => void;
+	peerFromPeerId: (peerId: string) => ChannelPeer;
 };
 
 type ChannelInit = { id: string };
 
 function createChannelStore({ id }: ChannelInit) {
-	return createStore<ChannelStore>()((set) => ({
+	return createStore<ChannelStore>()((set, get) => ({
 		id,
 		peers: {},
 		messages: [],
@@ -58,6 +59,9 @@ function createChannelStore({ id }: ChannelInit) {
 		},
 		addMessage: (message: ChannelMessage) => {
 			set((s) => ({ ...s, messages: [...s.messages, message] }));
+		},
+		peerFromPeerId: (peerId: string) => {
+			return get().peers[peerId];
 		},
 	}));
 }

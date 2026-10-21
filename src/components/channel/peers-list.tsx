@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.tsx";
-import { type ChannelStore } from "#/providers/channel-provider.tsx";
+import { useChannelStore, type ChannelStore } from "#/providers/channel-provider.tsx";
+import { useShallow } from "zustand/react/shallow";
 
 function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
 	return (
@@ -10,7 +11,15 @@ function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
 	);
 }
 
-export function PeersList({ peers }: Readonly<{ peers: ChannelStore["peers"] }>) {
+export function PeersList() {
+	const { peers } = useChannelStore<{
+		peers: ChannelStore["peers"];
+	}>(
+		useShallow((s) => ({
+			peers: s.peers,
+		})),
+	);
+
 	return (
 		<Card className="flex h-full flex-col gap-0">
 			<CardHeader className="border-b">

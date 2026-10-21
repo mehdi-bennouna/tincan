@@ -26,7 +26,7 @@ function RouteComponent() {
 function Page() {
 	const { selfPeerName, channelId } = Route.useSearch();
 
-	const { client, messages, peers } = useChannel({ selfPeerName, channelId });
+	const { client } = useChannel({ selfPeerName, channelId });
 
 	if (!client) {
 		return null;
@@ -34,8 +34,8 @@ function Page() {
 
 	return (
 		<div className="grid grid-cols-[1fr_5fr] grid-rows-1 gap-4 h-dvh w-dvw p-4">
-			<PeersList peers={peers}/>
-			<Chat messages={messages} sendChannelMessage={client.sendChannelMessage} />
+			<PeersList />
+			<Chat client={client} />
 		</div>
 	);
 }

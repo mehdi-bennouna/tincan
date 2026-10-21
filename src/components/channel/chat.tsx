@@ -15,18 +15,26 @@ import {
 } from "#/components/ui/message-scroller.tsx";
 import { Message, MessageContent } from "#/components/ui/message.tsx";
 import { type ChannelClient } from "#/lib/webrtc/channel-client.ts";
-import { type ChannelStore } from "#/providers/channel-provider.tsx";
+import { useChannelStore, type ChannelStore } from "#/providers/channel-provider.tsx";
 import { type } from "arktype";
 import { Send } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 
 const SendChatFormSchema = type({
 	text: "string > 0",
 });
 
-export function Chat({
-	messages,
-	sendChannelMessage,
-}: Readonly<{ messages: ChannelStore["messages"]; sendChannelMessage: ChannelClient["sendChannelMessage"] }>) {
+export function Chat({ client }: Readonly<{ client: ChannelClient }>) {
+	const { messages, peerFromPeerId } = useChannelStore<{
+		messages: ChannelStore["messages"];
+		peerFromPeerId: ChannelStore["peerFromPeerId"];
+	}>(
+		useShallow((s) => ({
+			messages: s.messages,
+			peerFromPeerId: s.peerFromPeerId,
+		})),
+	);
+
 	const sendTextMessageForm = useForm({
 		defaultValues: {
 			text: "",
@@ -35,7 +43,7 @@ export function Chat({
 			onSubmit: SendChatFormSchema,
 		},
 		onSubmit: ({ value, formApi }) => {
-			sendChannelMessage({ text: value.text });
+			client.sendChannelMessage({ text: value.text });
 			formApi.reset();
 		},
 	});
@@ -52,7 +60,7 @@ export function Chat({
 						<MessageScrollerViewport>
 							<MessageScrollerContent>
 								{messages.map((message) => {
-									const isMe = message.author.id === selfId;
+									const isMe = message.authorId === selfId;
 
 									if (message.type === "text") {
 										return (
@@ -62,7 +70,7 @@ export function Chat({
 														<span
 															className={`text-muted-foreground text-xs ${isMe ? "self-end" : "self-start"}`}
 														>
-															{message.author.name}
+															{peerFromPeerId(message.authorId).name}
 														</span>
 														<Bubble>
 															<BubbleContent className="whitespace-pre-wrap wrap-break-word">
