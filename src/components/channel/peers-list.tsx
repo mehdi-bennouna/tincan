@@ -3,6 +3,7 @@ import { Button } from "#/components/ui/button.tsx";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "#/components/ui/card.tsx";
 import { type ChannelClient } from "#/lib/webrtc/channel-client.ts";
 import { useChannelStore, type ChannelPeer, type ChannelStore } from "#/providers/channel-provider.tsx";
+import { X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
 function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
@@ -14,7 +15,7 @@ function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
 	);
 }
 
-export function PeersList({ client }: Readonly<{ client: ChannelClient }>) {
+export function PeersList({ client, togglePeersListVisible }: Readonly<{ client: ChannelClient; togglePeersListVisible: () => void }>) {
 	const { localPeer, peers } = useChannelStore<{
 		localPeer: ChannelPeer | undefined;
 		peers: ChannelStore["peers"];
@@ -29,8 +30,11 @@ export function PeersList({ client }: Readonly<{ client: ChannelClient }>) {
 
 	return (
 		<Card className="flex h-full flex-col gap-0">
-			<CardHeader className="border-b">
+			<CardHeader className="flex justify-between border-b">
 				<CardTitle>Peers</CardTitle>
+				<Button size="icon" onClick={togglePeersListVisible} className="md:hidden">
+					<X />
+				</Button>
 			</CardHeader>
 
 			<CardContent className="min-h-0 flex-1 p-0">

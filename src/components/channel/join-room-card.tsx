@@ -30,7 +30,7 @@ export function JoinRoomCard() {
 		},
 	});
 	return (
-		<Card className="w-md">
+		<Card className="w-md max-w-11/12">
 			<CardContent>
 				<form
 					id="room-form"

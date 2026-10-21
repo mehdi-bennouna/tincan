@@ -17,14 +17,14 @@ import { Message, MessageContent } from "#/components/ui/message.tsx";
 import { type ChannelClient } from "#/lib/webrtc/channel-client.ts";
 import { useChannelStore, type ChannelStore } from "#/providers/channel-provider.tsx";
 import { type } from "arktype";
-import { Send } from "lucide-react";
+import { Send, Users } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
 const SendChatFormSchema = type({
 	text: "string > 0",
 });
 
-export function Chat({ client }: Readonly<{ client: ChannelClient }>) {
+export function Chat({ client, togglePeersListVisible }: Readonly<{ client: ChannelClient; togglePeersListVisible: () => void }>) {
 	const { messages, peerFromPeerId } = useChannelStore<{
 		messages: ChannelStore["messages"];
 		peerFromPeerId: ChannelStore["peerFromPeerId"];
@@ -50,8 +50,11 @@ export function Chat({ client }: Readonly<{ client: ChannelClient }>) {
 
 	return (
 		<Card className="flex h-full flex-col">
-			<CardHeader className="border-b">
+			<CardHeader className="flex justify-between border-b">
 				<CardTitle>Chat</CardTitle>
+				<Button size="icon" onClick={togglePeersListVisible} className="md:hidden">
+					<Users />
+				</Button>
 			</CardHeader>
 
 			<CardContent className="min-h-0 flex-1">
