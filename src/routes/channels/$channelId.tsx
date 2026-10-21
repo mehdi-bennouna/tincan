@@ -34,7 +34,7 @@ function Page() {
 
 	return (
 		<div className="grid grid-cols-[1fr_5fr] grid-rows-1 gap-4 h-dvh w-dvw p-4">
-			<PeersList />
+			<PeersList client={client}/>
 			<Chat client={client} />
 		</div>
 	);

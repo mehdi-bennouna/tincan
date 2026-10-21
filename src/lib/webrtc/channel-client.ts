@@ -11,11 +11,13 @@ export type CreateChannelClientProps = {
 		onPeerLeave: (peerId: string) => void;
 		onPeerAnnounce: (peerId: string, peer: ChannelPeer) => void;
 		onChannelMessage: (message: ChannelMessage) => void;
+		onLeaveChannel: () => void;
 	};
 };
 
 export type ChannelClient = {
 	sendChannelMessage: ({ text }: { text: string }) => void;
+	leaveChannel: () => void;
 };
 
 export function createChannelClient({ config: { channelId, selfPeerName }, events }: CreateChannelClientProps): ChannelClient {
@@ -66,5 +68,10 @@ export function createChannelClient({ config: { channelId, selfPeerName }, event
 		events.onChannelMessage(payload);
 	}
 
-	return { sendChannelMessage };
+	function leaveChannel() {
+		connection.leave();
+		events.onLeaveChannel();
+	}
+
+	return { sendChannelMessage, leaveChannel };
 }

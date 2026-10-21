@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { selfId } from "@trystero-p2p/supabase";
 import { createChannelClient, type ChannelClient } from "#/lib/webrtc/channel-client.ts";
 import { useChannelStore, type ChannelStore } from "#/providers/channel-provider.tsx";
@@ -11,11 +12,13 @@ export type UseConnectionProps = {
 
 export function useChannel({ selfPeerName, channelId }: UseConnectionProps) {
 	const [client, setClient] = useState<ChannelClient | null>(null);
+	const navigate = useNavigate();
 
-	const { addMessage, upsertPeer, removePeer } = useChannelStore<{
+	const { addMessage, upsertPeer, removePeer, reset } = useChannelStore<{
 		addMessage: ChannelStore["addMessage"];
 		upsertPeer: ChannelStore["upsertPeer"];
 		removePeer: ChannelStore["removePeer"];
+		reset: ChannelStore["reset"];
 	}>(
 		useShallow((s) => ({
 			messages: s.messages,
@@ -23,6 +26,7 @@ export function useChannel({ selfPeerName, channelId }: UseConnectionProps) {
 			addMessage: s.addMessage,
 			upsertPeer: s.upsertPeer,
 			removePeer: s.removePeer,
+			reset: s.reset,
 		})),
 	);
 
@@ -46,6 +50,10 @@ export function useChannel({ selfPeerName, channelId }: UseConnectionProps) {
 					},
 					onChannelMessage: (message) => {
 						addMessage(message);
+					},
+					onLeaveChannel: () => {
+						reset();
+						navigate({ to: "/" });
 					},
 				},
 			}),

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { createStore, useStore, type StoreApi } from "zustand";
 
+
 export type ChannelPeer = {
 	id: string;
 	name: string;
@@ -38,6 +39,7 @@ export type ChannelStore = {
 	removePeer: (peerId: string) => void;
 	addMessage: (messageId: ChannelMessage) => void;
 	peerFromPeerId: (peerId: string) => ChannelPeer;
+	reset: () => void;
 };
 
 type ChannelInit = { id: string };
@@ -48,6 +50,9 @@ function createChannelStore({ id }: ChannelInit) {
 		peers: {},
 		messages: [],
 
+		reset: () => {
+			set(() => ({ id: "", peers: {}, messages: [] }));
+		},
 		upsertPeer: (peerId, peer) => {
 			set((s) => ({ peers: { ...s.peers, [peerId]: peer } }));
 		},
