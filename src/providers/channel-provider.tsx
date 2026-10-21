@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { createStore, useStore, type StoreApi } from "zustand";
 
-
 export type ChannelPeer = {
 	id: string;
 	name: string;

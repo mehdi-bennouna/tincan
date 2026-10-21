@@ -4,6 +4,7 @@ import { type ChannelClient } from "#/lib/webrtc/channel-client.ts";
 import { useChannelStore, type ChannelStore } from "#/providers/channel-provider.tsx";
 import { useShallow } from "zustand/react/shallow";
 
+
 function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
 	return (
 		<div className="flex flex-col gap-2 border-b w-full p-4">
@@ -35,7 +36,12 @@ export function PeersList({ client }: Readonly<{ client: ChannelClient }>) {
 			</CardContent>
 
 			<CardFooter className="flex-col gap-3">
-				<Button className="w-full">Join Voice</Button>
+				<Button className="w-full" onClick={() => client.joinVoice()}>
+					Join Voice
+				</Button>
+				<Button className="w-full" onClick={() => client.leaveVoice()}>
+					Leave Voice
+				</Button>
 				<Button className="w-full" variant="destructive" onClick={() => client.leaveChannel()}>
 					Leave channel
 				</Button>
