@@ -26,7 +26,7 @@ function RouteComponent() {
 function Page() {
 	const { selfPeerName, channelId } = Route.useSearch();
 
-	const { client } = useChannel({ selfPeerName, channelId });
+	const { client } = useChannel({ localPeerName: selfPeerName, channelId });
 
 	if (!client) {
 		return null;

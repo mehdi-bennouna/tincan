@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 export type UseConnectionProps = {
-	selfPeerName: string;
+	localPeerName: string;
 	channelId: string;
 };
 
-export function useChannel({ selfPeerName, channelId }: UseConnectionProps) {
+export function useChannel({ localPeerName, channelId }: UseConnectionProps) {
 	const [client, setClient] = useState<ChannelClient | null>(null);
 	const navigate = useNavigate();
 
@@ -31,13 +31,13 @@ export function useChannel({ selfPeerName, channelId }: UseConnectionProps) {
 	);
 
 	useEffect(() => {
-		upsertPeer(selfId, { id: selfId, name: selfPeerName });
+		upsertPeer(selfId, { id: selfId, name: localPeerName, inVoice: false });
 	}, []);
 
 	useEffect(() => {
 		setClient(
 			createChannelClient({
-				config: { channelId, selfPeerName: selfPeerName },
+				config: { channelId, localPeerName: localPeerName },
 				events: {
 					onPeerJoin: (peerId) => {
 						console.log("peer join", { peerId });

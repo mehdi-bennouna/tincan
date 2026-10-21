@@ -4,7 +4,7 @@ import { type ChannelMessage, type ChannelPeer } from "#/providers/channel-provi
 export type CreateChannelClientProps = {
 	config: {
 		channelId: string;
-		selfPeerName: string;
+		localPeerName: string;
 	};
 	events: {
 		onPeerJoin: (peerId: string) => void;
@@ -22,10 +22,9 @@ export type ChannelClient = {
 	leaveChannel: () => void;
 };
 
-export function createChannelClient({ config: { channelId, selfPeerName }, events }: CreateChannelClientProps): ChannelClient {
-	const selfPeer = { id: selfId, name: selfPeerName };
+export function createChannelClient({ config: { channelId, localPeerName }, events }: CreateChannelClientProps): ChannelClient {
+	const localPeer = { id: selfId, name: localPeerName, inVoice: false };
 
-	let inVoice = false;
 	let localStream: MediaStream | null = null;
 	const remoteAudioStreams = new Map<string, MediaStream>();
 	const remoteAudio = new Map<string, HTMLAudioElement>();
@@ -51,7 +50,7 @@ export function createChannelClient({ config: { channelId, selfPeerName }, event
 			connection.addStream(localStream, { target: peerId });
 		}
 
-		announceAction.send(selfPeer, { target: peerId });
+		announceAction.send(localPeer, { target: peerId });
 		events.onPeerJoin(peerId);
 	};
 
@@ -66,11 +65,16 @@ export function createChannelClient({ config: { channelId, selfPeerName }, event
 	};
 
 	connection.onPeerStream = (stream, peerId) => {
-		remoteAudioStreams.set(peerId, stream); // always remember it
-		if (inVoice) attachVoice(peerId, stream); // only play it while in voice
+		remoteAudioStreams.set(peerId, stream);
+		if (localPeer.inVoice) attachVoice(peerId, stream);
 	};
 
 	announceAction.onMessage = (payload, { peerId }) => {
+		if (!payload.inVoice) {
+			remoteAudioStreams.delete(peerId);
+			const audio = remoteAudio.get(peerId);
+			if (audio) audio.srcObject = null;
+		}
 		events.onPeerAnnounce(peerId, payload);
 	};
 
@@ -78,11 +82,16 @@ export function createChannelClient({ config: { channelId, selfPeerName }, event
 		events.onChannelMessage(payload);
 	};
 
+	function announceSelf() {
+		announceAction.send(localPeer);
+		events.onPeerAnnounce(localPeer.id, localPeer);
+	}
+
 	function sendChannelMessage({ text }: { text: string }) {
 		const payload: ChannelMessage = {
 			id: crypto.randomUUID(),
 			type: "text",
-			authorId: selfPeer.id,
+			authorId: localPeer.id,
 			timestamp: Date.now(),
 			text,
 		};
@@ -110,8 +119,8 @@ export function createChannelClient({ config: { channelId, selfPeerName }, event
 	}
 
 	async function joinVoice() {
-		if (inVoice) return;
-		inVoice = true;
+		if (localPeer.inVoice) return;
+		localPeer.inVoice = true;
 
 		let stream: MediaStream;
 		try {
@@ -119,12 +128,12 @@ export function createChannelClient({ config: { channelId, selfPeerName }, event
 				audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
 			});
 		} catch (e) {
-			inVoice = false;
+			localPeer.inVoice = false;
 			throw e;
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-		if (!inVoice) {
+		if (!localPeer.inVoice) {
 			stream.getTracks().forEach((t) => t.stop());
 			return;
 		}
@@ -132,10 +141,11 @@ export function createChannelClient({ config: { channelId, selfPeerName }, event
 		localStream = stream;
 		connection.addStream(stream);
 		for (const [peerId, s] of remoteAudioStreams) attachVoice(peerId, s);
+		announceSelf()
 	}
 
 	function leaveVoice() {
-		inVoice = false;
+		localPeer.inVoice = false;
 
 		if (localStream) {
 			connection.removeStream(localStream);
@@ -144,6 +154,7 @@ export function createChannelClient({ config: { channelId, selfPeerName }, event
 		}
 
 		detachAllVoice();
+		announceSelf()
 	}
 
 	function leaveChannel() {
