@@ -2,20 +2,23 @@ import { useSyncExternalStore } from "react";
 
 const KEY = "icy-link:username";
 const listeners = new Set<() => void>();
+// fallback for when storage is blocked, so the name still lasts for this page load
+let memoryName: string | null = null;
 
 export function getSavedUsername(): string | null {
 	try {
-		return localStorage.getItem(KEY);
+		return localStorage.getItem(KEY)?.trim() || memoryName;
 	} catch {
-		return null;
+		return memoryName;
 	}
 }
 
 export function saveUsername(name: string) {
+	memoryName = name.trim() || null;
 	try {
-		localStorage.setItem(KEY, name);
+		localStorage.setItem(KEY, name.trim());
 	} catch {
-		// storage can be blocked (private mode, disabled site data); the name just won't be remembered
+		// storage can be blocked (private mode, disabled site data); memoryName covers this page load
 	}
 	listeners.forEach((l) => l());
 }
