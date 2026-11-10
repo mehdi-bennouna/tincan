@@ -1,4 +1,5 @@
 import { type joinRoom } from "@trystero-p2p/supabase";
+import { createSpeakingDetector } from "#/lib/channel/speaking.ts";
 
 type Room = ReturnType<typeof joinRoom>;
 
@@ -13,11 +14,17 @@ export type Voice = {
 	destroy: () => void;
 };
 
-export function createVoice(room: Room): Voice {
+export type CreateVoiceOptions = {
+	selfId: string;
+	onSpeakingChange: (id: string, speaking: boolean) => void;
+};
+
+export function createVoice(room: Room, { selfId, onSpeakingChange }: CreateVoiceOptions): Voice {
 	let localStream: MediaStream | null = null;
 	let attempt = 0;
 	const remoteStreams = new Map<string, MediaStream>();
 	const remoteAudio = new Map<string, HTMLAudioElement>();
+	const speaking = createSpeakingDetector(onSpeakingChange);
 
 	function attach(peerId: string, stream: MediaStream) {
 		let audio = remoteAudio.get(peerId);
@@ -29,9 +36,11 @@ export function createVoice(room: Room): Voice {
 		}
 
 		audio.srcObject = stream;
+		speaking.monitor(peerId, stream);
 	}
 
 	function detach(peerId: string) {
+		speaking.unmonitor(peerId);
 		const audio = remoteAudio.get(peerId);
 		if (!audio) return;
 		audio.pause();
@@ -45,6 +54,7 @@ export function createVoice(room: Room): Voice {
 	async function join() {
 		if (localStream) return true;
 		const current = ++attempt;
+		speaking.ensureContext();
 
 		const stream = await navigator.mediaDevices.getUserMedia({
 			audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -57,12 +67,14 @@ export function createVoice(room: Room): Voice {
 
 		localStream = stream;
 		room.addStream(stream);
+		speaking.monitor(selfId, stream);
 		for (const [peerId, s] of remoteStreams) attach(peerId, s);
 		return true;
 	}
 
 	function leave() {
 		attempt++;
+		speaking.unmonitor(selfId);
 
 		if (localStream) {
 			room.removeStream(localStream);
@@ -94,6 +106,7 @@ export function createVoice(room: Room): Voice {
 
 	function destroy() {
 		leave();
+		speaking.destroy();
 		remoteStreams.clear();
 		remoteAudio.clear();
 	}

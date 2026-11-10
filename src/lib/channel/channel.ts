@@ -27,6 +27,7 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 			[selfId]: { id: selfId, name: selfName, presence: "online", inVoice: false, lastSeen: Date.now() },
 		},
 		timeline: [],
+		speaking: {},
 	}));
 
 	const room = joinRoom(
@@ -43,7 +44,16 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 		},
 	);
 
-	const voice = createVoice(room);
+	const voice = createVoice(room, {
+		selfId,
+		onSpeakingChange: (id, isSpeaking) => {
+			store.setState((s) => ({
+				speaking: isSpeaking
+					? { ...s.speaking, [id]: true }
+					: Object.fromEntries(Object.entries(s.speaking).filter(([key]) => key !== id)),
+			}));
+		},
+	});
 	const announceAction = room.makeAction<AnnouncePayload>("announce");
 	const textAction = room.makeAction<TextPayload>("text");
 	let destroyed = false;

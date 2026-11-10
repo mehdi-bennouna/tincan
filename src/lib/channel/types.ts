@@ -42,4 +42,5 @@ export type ChannelState = {
 	selfId: string;
 	members: Record<string, Member>;
 	timeline: Array<TimelineItem>;
+	speaking: Record<string, true>;
 };
