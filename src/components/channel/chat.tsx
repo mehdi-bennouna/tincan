@@ -62,6 +62,23 @@ function copyInviteLink(channelId: string) {
 	);
 }
 
+function EmptyTimeline({ alone, channelId }: Readonly<{ alone: boolean; channelId: string }>) {
+	return (
+		<div className="m-auto flex flex-col items-center gap-3 text-center text-muted-foreground text-sm">
+			{alone ? (
+				<>
+					<p>You're the only one here. Share the invite link to bring someone in.</p>
+					<Button onClick={() => copyInviteLink(channelId)}>
+						<Link /> Copy invite link
+					</Button>
+				</>
+			) : (
+				<p>No messages yet. Say hi!</p>
+			)}
+		</div>
+	);
+}
+
 function TimelineEntry({
 	item,
 	selfId,
@@ -94,11 +111,12 @@ function TimelineEntry({
 export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisible: () => void }>) {
 	const channel = useChannel();
 	const names = useDisplayNames();
-	const { channelId, selfId, timeline } = useChannelState(
+	const { channelId, selfId, timeline, alone } = useChannelState(
 		useShallow((s) => ({
 			channelId: s.id,
 			selfId: s.selfId,
 			timeline: s.timeline,
+			alone: Object.values(s.members).every((m) => m.id === s.selfId || m.presence !== "online"),
 		})),
 	);
 
@@ -134,6 +152,7 @@ export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisib
 					<MessageScroller>
 						<MessageScrollerViewport>
 							<MessageScrollerContent>
+								{timeline.length === 0 && <EmptyTimeline alone={alone} channelId={channelId} />}
 								{timeline.map((item, i) => {
 									const grouped = continuesGroup(timeline[i - 1], item);
 									return (

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Chat } from "#/components/channel/chat.tsx";
 import { JoinRoomCard } from "#/components/channel/join-room-card.tsx";
 import { PeersList } from "#/components/channel/peers-list.tsx";
+import { useUnreadTitle } from "#/hooks/use-unread-title.ts";
 import { useSavedUsername } from "#/lib/username.ts";
 import { ChannelProvider } from "#/providers/channel-provider.tsx";
 import { useState } from "react";
@@ -33,6 +34,7 @@ function RouteComponent() {
 
 function Page() {
 	const [peersListVisible, setPeersListVisible] = useState(false);
+	useUnreadTitle();
 
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-[1fr_5fr] grid-rows-1 gap-4 h-dvh w-dvw p-4">
