@@ -36,7 +36,14 @@ export type PresenceItem = BaseTimelineItem & {
 	memberId: string;
 };
 
-export type TimelineItem = TextItem | FileItem | PresenceItem;
+export type RenameItem = BaseTimelineItem & {
+	kind: "member-renamed";
+	memberId: string;
+	previousName: string;
+	name: string;
+};
+
+export type TimelineItem = TextItem | FileItem | PresenceItem | RenameItem;
 
 export type ChannelState = {
 	id: string;

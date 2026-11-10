@@ -1,8 +1,13 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "#/components/ui/button.tsx";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "#/components/ui/card.tsx";
+import { Input } from "#/components/ui/input.tsx";
+import { shortId } from "#/lib/channel/names.ts";
+import { type Member } from "#/lib/channel/types.ts";
+import { saveUsername } from "#/lib/username.ts";
 import { useChannel, useChannelState, useDisplayNames } from "#/providers/channel-provider.tsx";
-import { Headphones, Mic, MicOff, X } from "lucide-react";
+import { Headphones, Mic, MicOff, Pencil, X } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
@@ -21,18 +26,77 @@ function voiceErrorMessage(e: unknown) {
 	}
 }
 
+function SelfName({ name, displayName }: Readonly<{ name: string; displayName: string }>) {
+	const [editing, setEditing] = useState(false);
+	const [draft, setDraft] = useState(name);
+	const cancelled = useRef(false);
+
+	function commit() {
+		if (!cancelled.current && draft.trim()) saveUsername(draft);
+		setEditing(false);
+	}
+
+	if (editing) {
+		return (
+			<form
+				onSubmit={(e) => {
+					e.preventDefault();
+					commit();
+				}}
+			>
+				<Input
+					autoFocus
+					aria-label="Your name"
+					value={draft}
+					onChange={(e) => setDraft(e.target.value)}
+					onBlur={commit}
+					onKeyDown={(e) => {
+						if (e.key === "Escape") {
+							cancelled.current = true;
+							setEditing(false);
+						}
+					}}
+				/>
+			</form>
+		);
+	}
+
+	return (
+		<div className="flex min-w-0 items-center gap-1">
+			<p className="truncate font-semibold">
+				{displayName} <span className="font-normal text-muted-foreground">(you)</span>
+			</p>
+			<Button
+				size="icon-xs"
+				variant="ghost"
+				aria-label="Change name"
+				onClick={() => {
+					cancelled.current = false;
+					setDraft(name);
+					setEditing(true);
+				}}
+			>
+				<Pencil />
+			</Button>
+		</div>
+	);
+}
+
 function Peer({
-	id,
-	name,
-	inVoice,
-	muted,
+	member,
+	displayName,
+	isSelf,
 	speaking,
-}: Readonly<{ id: string; name: string; inVoice: boolean; muted: boolean; speaking: boolean }>) {
+}: Readonly<{ member: Member; displayName: string; isSelf: boolean; speaking: boolean }>) {
+	const { id, name, inVoice, muted } = member;
+
 	return (
 		<div className="flex items-center justify-between gap-2 border-b w-full p-4">
-			<div className="flex min-w-0 flex-col gap-2">
-				<p className="font-semibold">{name}</p>
-				<p className="font-light truncate">{id}</p>
+			<div className="flex min-w-0 flex-col gap-1">
+				{isSelf ? <SelfName name={name} displayName={displayName} /> : <p className="truncate font-semibold">{displayName}</p>}
+				<p className="text-xs font-light text-muted-foreground" title={id}>
+					#{shortId(id)}
+				</p>
 			</div>
 			{inVoice && muted && <MicOff aria-label="Muted" className="size-4 shrink-0 text-destructive" />}
 			{inVoice && !muted && (
@@ -59,7 +123,8 @@ export function PeersList({ togglePeersListVisible }: Readonly<{ togglePeersList
 
 	if (!self) return null;
 
-	const online = Object.values(members).filter((m) => m.presence === "online");
+	const others = Object.values(members).filter((m) => m.presence === "online" && m.id !== self.id);
+	const online = [self, ...others];
 
 	return (
 		<Card className="flex h-full flex-col gap-0">
@@ -74,10 +139,9 @@ export function PeersList({ togglePeersListVisible }: Readonly<{ togglePeersList
 				{online.map((m) => (
 					<Peer
 						key={m.id}
-						id={m.id}
-						name={names[m.id] ?? m.name}
-						inVoice={m.inVoice}
-						muted={m.muted}
+						member={m}
+						displayName={names[m.id] ?? m.name}
+						isSelf={m.id === self.id}
 						speaking={speaking[m.id] ?? false}
 					/>
 				))}

@@ -80,6 +80,12 @@ function TimelineEntry({
 					{names[item.memberId] ?? "Someone"} {item.kind === "member-joined" ? "joined" : "left"}
 				</p>
 			);
+		case "member-renamed":
+			return (
+				<p className="text-muted-foreground text-center text-xs">
+					{item.previousName} is now {item.name}
+				</p>
+			);
 		case "file":
 			return null;
 	}

@@ -1,6 +1,6 @@
 import { joinRoom, selfId } from "@trystero-p2p/supabase";
 import { AnnouncePayload, TextPayload } from "#/lib/channel/protocol.ts";
-import { type ChannelState, type Member } from "#/lib/channel/types.ts";
+import { type ChannelState, type Member, type TimelineItem } from "#/lib/channel/types.ts";
 import { createVoice } from "#/lib/channel/voice.ts";
 import { type } from "arktype";
 import { createStore, type StoreApi } from "zustand";
@@ -17,6 +17,7 @@ export type Channel = {
 	joinVoice: () => Promise<void>;
 	leaveVoice: () => void;
 	setMuted: (muted: boolean) => void;
+	setName: (name: string) => void;
 	destroy: () => void;
 };
 
@@ -58,9 +59,10 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 	const announceAction = room.makeAction<AnnouncePayload>("announce");
 	const textAction = room.makeAction<TextPayload>("text");
 	let destroyed = false;
+	let name = selfName;
 
 	function announceSelf(target?: string) {
-		announceAction.send({ name: selfName, inVoice: voice.isActive(), muted: voice.isMuted() }, target ? { target } : undefined);
+		announceAction.send({ name, inVoice: voice.isActive(), muted: voice.isMuted() }, target ? { target } : undefined);
 	}
 
 	function syncSelfVoiceState() {
@@ -104,7 +106,7 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 
 		store.setState((s) => {
 			const now = Date.now();
-			const wasOnline = s.members[peerId]?.presence === "online";
+			const previous = s.members[peerId];
 			const member: Member = {
 				id: peerId,
 				name: payload.name,
@@ -113,11 +115,23 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 				muted: payload.muted ?? false,
 				lastSeen: now,
 			};
+			let event: TimelineItem | null = null;
+			if (previous?.presence !== "online") {
+				event = { kind: "member-joined", id: crypto.randomUUID(), at: now, memberId: peerId };
+			} else if (previous.name !== payload.name) {
+				event = {
+					kind: "member-renamed",
+					id: crypto.randomUUID(),
+					at: now,
+					memberId: peerId,
+					previousName: previous.name,
+					name: payload.name,
+				};
+			}
+
 			return {
 				members: { ...s.members, [peerId]: member },
-				timeline: wasOnline
-					? s.timeline
-					: [...s.timeline, { kind: "member-joined", id: crypto.randomUUID(), at: now, memberId: peerId }],
+				timeline: event ? [...s.timeline, event] : s.timeline,
 			};
 		});
 	};
@@ -136,7 +150,7 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 	}
 
 	function sendText(text: string) {
-		const payload: TextPayload = { id: crypto.randomUUID(), authorName: selfName, text, at: Date.now() };
+		const payload: TextPayload = { id: crypto.randomUUID(), authorName: name, text, at: Date.now() };
 		textAction.send(payload);
 		appendText(selfId, payload);
 	}
@@ -155,6 +169,26 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 		syncSelfVoiceState();
 	}
 
+	function setName(next: string) {
+		const trimmed = next.trim();
+		if (!trimmed || trimmed === name) return;
+
+		const previousName = name;
+		name = trimmed;
+		store.setState((s) => {
+			const self = s.members[selfId];
+			if (!self) return {};
+			return {
+				members: { ...s.members, [selfId]: { ...self, name } },
+				timeline: [
+					...s.timeline,
+					{ kind: "member-renamed", id: crypto.randomUUID(), at: Date.now(), memberId: selfId, previousName, name },
+				],
+			};
+		});
+		announceSelf();
+	}
+
 	function destroy() {
 		if (destroyed) return;
 		destroyed = true;
@@ -163,5 +197,5 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 		room.leave();
 	}
 
-	return { store, sendText, joinVoice, leaveVoice, setMuted, destroy };
+	return { store, sendText, joinVoice, leaveVoice, setMuted, setName, destroy };
 }

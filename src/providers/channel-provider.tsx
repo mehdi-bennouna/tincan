@@ -10,6 +10,8 @@ const ChannelContext = createContext<Channel | null>(null);
 export function ChannelProvider({ children, channelId, selfName }: Readonly<{ children: ReactNode; channelId: string; selfName: string }>) {
 	const [channel, setChannel] = useState<Channel | null>(null);
 
+	// selfName is only the initial name here; later changes go through setName below
+	// so renaming doesn't reconnect and wipe the chat
 	useEffect(() => {
 		const next = createChannel({
 			channelId,
@@ -22,7 +24,11 @@ export function ChannelProvider({ children, channelId, selfName }: Readonly<{ ch
 			next.destroy();
 			setChannel(null);
 		};
-	}, [channelId, selfName]);
+	}, [channelId]);
+
+	useEffect(() => {
+		channel?.setName(selfName);
+	}, [channel, selfName]);
 
 	if (!channel) return null;
 
