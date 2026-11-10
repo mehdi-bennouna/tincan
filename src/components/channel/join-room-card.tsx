@@ -1,36 +1,52 @@
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "#/components/ui/button.tsx";
-import { Card, CardContent } from "#/components/ui/card.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card.tsx";
 import { Field, FieldError, FieldGroup, FieldLabel } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
+import { getSavedUsername, saveUsername } from "#/lib/username.ts";
 import { type } from "arktype";
+import { useEffect } from "react";
 
 const RoomFormSchema = type({
 	channelId: "string > 0",
 	peerName: "string > 0",
 });
 
-export function JoinRoomCard() {
+// With `channelId` the card is shown on a channel page opened from an invite
+// link: the channel is fixed and saving the name is enough to join.
+export function JoinRoomCard({ channelId }: Readonly<{ channelId?: string }>) {
 	const navigate = useNavigate();
 
 	const form = useForm({
 		defaultValues: {
-			channelId: "",
+			channelId: channelId ?? "",
 			peerName: "",
 		},
 		validators: {
 			onSubmit: RoomFormSchema,
 		},
 		onSubmit: ({ value }) => {
-			navigate({
-				to: `/channels/${value.channelId}`,
-				search: { channelId: value.channelId, selfPeerName: value.peerName },
-			});
+			saveUsername(value.peerName);
+			if (channelId === undefined) {
+				navigate({ to: "/channels/$channelId", params: { channelId: value.channelId } });
+			}
 		},
 	});
+
+	// read after mount so the server-rendered and hydrated markup match
+	useEffect(() => {
+		const saved = getSavedUsername();
+		if (saved !== null) form.setFieldValue("peerName", saved);
+	}, [form]);
+
 	return (
 		<Card className="w-md max-w-11/12">
+			{channelId !== undefined && (
+				<CardHeader>
+					<CardTitle>Join {channelId}</CardTitle>
+				</CardHeader>
+			)}
 			<CardContent>
 				<form
 					id="room-form"
@@ -41,28 +57,30 @@ export function JoinRoomCard() {
 				>
 					<FieldGroup>
 						<FieldGroup>
-							<form.Field
-								name={"channelId"}
-								children={(field) => {
-									const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+							{channelId === undefined && (
+								<form.Field
+									name={"channelId"}
+									children={(field) => {
+										const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
-									return (
-										<Field>
-											<FieldLabel htmlFor={field.name}>Channel ID</FieldLabel>
-											<Input
-												id={field.name}
-												name={field.name}
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={(e) => field.handleChange(e.target.value)}
-												aria-invalid={isInvalid}
-												autoComplete="off"
-											/>
-											{isInvalid && <FieldError errors={field.state.meta.errors} />}
-										</Field>
-									);
-								}}
-							/>
+										return (
+											<Field>
+												<FieldLabel htmlFor={field.name}>Channel ID</FieldLabel>
+												<Input
+													id={field.name}
+													name={field.name}
+													value={field.state.value}
+													onBlur={field.handleBlur}
+													onChange={(e) => field.handleChange(e.target.value)}
+													aria-invalid={isInvalid}
+													autoComplete="off"
+												/>
+												{isInvalid && <FieldError errors={field.state.meta.errors} />}
+											</Field>
+										);
+									}}
+								/>
+							)}
 
 							<form.Field
 								name={"peerName"}

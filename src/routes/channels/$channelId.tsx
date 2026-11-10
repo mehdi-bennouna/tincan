@@ -1,23 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Chat } from "#/components/channel/chat.tsx";
+import { JoinRoomCard } from "#/components/channel/join-room-card.tsx";
 import { PeersList } from "#/components/channel/peers-list.tsx";
+import { useSavedUsername } from "#/lib/username.ts";
 import { ChannelProvider } from "#/providers/channel-provider.tsx";
-import { type } from "arktype";
 import { useState } from "react";
 
 export const Route = createFileRoute("/channels/$channelId")({
 	component: RouteComponent,
-	validateSearch: type({
-		selfPeerName: "string > 0",
-		channelId: "string > 0",
-	}),
 });
 
 function RouteComponent() {
-	const { channelId, selfPeerName } = Route.useSearch();
+	const { channelId } = Route.useParams();
+	const username = useSavedUsername();
+
+	if (username === undefined) return null;
+
+	if (username === null) {
+		return (
+			<div className="flex items-center justify-center h-dvh w-dvw">
+				<JoinRoomCard channelId={channelId} />
+			</div>
+		);
+	}
 
 	return (
-		<ChannelProvider channelId={channelId} selfName={selfPeerName}>
+		<ChannelProvider channelId={channelId} selfName={username}>
 			<Page />
 		</ChannelProvider>
 	);

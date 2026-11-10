@@ -16,12 +16,21 @@ import { Message, MessageContent } from "#/components/ui/message.tsx";
 import { type TimelineItem } from "#/lib/channel/types.ts";
 import { useChannel, useChannelState, useDisplayNames } from "#/providers/channel-provider.tsx";
 import { type } from "arktype";
-import { Send, Users } from "lucide-react";
+import { Link, Send, Users } from "lucide-react";
+import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
 const SendChatFormSchema = type({
 	text: "string > 0",
 });
+
+function copyInviteLink(channelId: string) {
+	const url = `${window.location.origin}/channels/${encodeURIComponent(channelId)}`;
+	navigator.clipboard.writeText(url).then(
+		() => toast.success("Invite link copied"),
+		() => toast.error("Could not copy the invite link", { description: url }),
+	);
+}
 
 function TimelineEntry({ item, selfId, names }: Readonly<{ item: TimelineItem; selfId: string; names: Record<string, string> }>) {
 	switch (item.kind) {
@@ -55,8 +64,9 @@ function TimelineEntry({ item, selfId, names }: Readonly<{ item: TimelineItem; s
 export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisible: () => void }>) {
 	const channel = useChannel();
 	const names = useDisplayNames();
-	const { selfId, timeline } = useChannelState(
+	const { channelId, selfId, timeline } = useChannelState(
 		useShallow((s) => ({
+			channelId: s.id,
 			selfId: s.selfId,
 			timeline: s.timeline,
 		})),
@@ -79,9 +89,14 @@ export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisib
 		<Card className="flex h-full flex-col">
 			<CardHeader className="flex justify-between border-b">
 				<CardTitle>Chat</CardTitle>
-				<Button size="icon" onClick={togglePeersListVisible} className="md:hidden">
-					<Users />
-				</Button>
+				<div className="flex gap-2">
+					<Button size="icon" onClick={() => copyInviteLink(channelId)} aria-label="Copy invite link">
+						<Link />
+					</Button>
+					<Button size="icon" onClick={togglePeersListVisible} className="md:hidden">
+						<Users />
+					</Button>
+				</div>
 			</CardHeader>
 
 			<CardContent className="min-h-0 flex-1">
