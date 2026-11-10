@@ -13,8 +13,8 @@ import {
 	MessageScrollerViewport,
 } from "#/components/ui/message-scroller.tsx";
 import { Message, MessageContent } from "#/components/ui/message.tsx";
-import { type ChannelState, type TimelineItem } from "#/lib/channel/types.ts";
-import { useChannel, useChannelState } from "#/providers/channel-provider.tsx";
+import { type TimelineItem } from "#/lib/channel/types.ts";
+import { useChannel, useChannelState, useDisplayNames } from "#/providers/channel-provider.tsx";
 import { type } from "arktype";
 import { Send, Users } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -23,7 +23,7 @@ const SendChatFormSchema = type({
 	text: "string > 0",
 });
 
-function TimelineEntry({ item, selfId, members }: Readonly<{ item: TimelineItem; selfId: string; members: ChannelState["members"] }>) {
+function TimelineEntry({ item, selfId, names }: Readonly<{ item: TimelineItem; selfId: string; names: Record<string, string> }>) {
 	switch (item.kind) {
 		case "text": {
 			const isMe = item.authorId === selfId;
@@ -31,7 +31,7 @@ function TimelineEntry({ item, selfId, members }: Readonly<{ item: TimelineItem;
 				<Message align={isMe ? "end" : "start"}>
 					<MessageContent>
 						<span className={`text-muted-foreground text-xs ${isMe ? "self-end" : "self-start"}`}>
-							{members[item.authorId]?.name ?? item.authorName}
+							{names[item.authorId] ?? item.authorName}
 						</span>
 						<Bubble>
 							<BubbleContent className="whitespace-pre-wrap wrap-break-word">{item.text}</BubbleContent>
@@ -44,7 +44,7 @@ function TimelineEntry({ item, selfId, members }: Readonly<{ item: TimelineItem;
 		case "member-left":
 			return (
 				<p className="text-muted-foreground text-center text-xs">
-					{members[item.memberId]?.name ?? "Someone"} {item.kind === "member-joined" ? "joined" : "left"}
+					{names[item.memberId] ?? "Someone"} {item.kind === "member-joined" ? "joined" : "left"}
 				</p>
 			);
 		case "file":
@@ -54,10 +54,10 @@ function TimelineEntry({ item, selfId, members }: Readonly<{ item: TimelineItem;
 
 export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisible: () => void }>) {
 	const channel = useChannel();
-	const { selfId, members, timeline } = useChannelState(
+	const names = useDisplayNames();
+	const { selfId, timeline } = useChannelState(
 		useShallow((s) => ({
 			selfId: s.selfId,
-			members: s.members,
 			timeline: s.timeline,
 		})),
 	);
@@ -91,7 +91,7 @@ export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisib
 							<MessageScrollerContent>
 								{timeline.map((item) => (
 									<MessageScrollerItem key={item.id} messageId={item.id}>
-										<TimelineEntry item={item} selfId={selfId} members={members} />
+										<TimelineEntry item={item} selfId={selfId} names={names} />
 									</MessageScrollerItem>
 								))}
 							</MessageScrollerContent>

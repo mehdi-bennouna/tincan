@@ -1,6 +1,7 @@
 import { createChannel, type Channel } from "#/lib/channel/channel.ts";
+import { getDisplayNames } from "#/lib/channel/names.ts";
 import { type ChannelState } from "#/lib/channel/types.ts";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useStore } from "zustand";
 
@@ -39,4 +40,9 @@ export function useChannel(): Channel {
 
 export function useChannelState<T>(selector: (state: ChannelState) => T): T {
 	return useStore(useChannel().store, selector);
+}
+
+export function useDisplayNames(): Record<string, string> {
+	const members = useChannelState((s) => s.members);
+	return useMemo(() => getDisplayNames(members), [members]);
 }

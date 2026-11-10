@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "#/components/ui/button.tsx";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "#/components/ui/card.tsx";
-import { useChannel, useChannelState } from "#/providers/channel-provider.tsx";
+import { useChannel, useChannelState, useDisplayNames } from "#/providers/channel-provider.tsx";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
@@ -39,6 +39,7 @@ export function PeersList({ togglePeersListVisible }: Readonly<{ togglePeersList
 			members: s.members,
 		})),
 	);
+	const names = useDisplayNames();
 
 	if (!self) return null;
 
@@ -55,7 +56,7 @@ export function PeersList({ togglePeersListVisible }: Readonly<{ togglePeersList
 
 			<CardContent className="min-h-0 flex-1 p-0">
 				{online.map((m) => (
-					<Peer key={m.id} id={m.id} name={m.name} />
+					<Peer key={m.id} id={m.id} name={names[m.id] ?? m.name} />
 				))}
 			</CardContent>
 
