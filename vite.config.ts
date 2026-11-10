@@ -10,7 +10,13 @@ const config = defineConfig({
 	plugins: [
 		devtools(),
 		nitro({
-			rollupConfig: { external: [/^@sentry\//] },
+			rollupConfig: {
+				external: [/^@sentry\//],
+				onwarn(warning: { code?: string }, warn: (warning: { code?: string }) => void) {
+					if (warning.code === "MODULE_LEVEL_DIRECTIVE") return;
+					warn(warning);
+				},
+			},
 			compatibilityDate: "2026-11-10",
 			cloudflare: {
 				deployConfig: true,
