@@ -1,6 +1,7 @@
 import { createChannel, type Channel } from "#/lib/channel/channel.ts";
 import { type ChannelState } from "#/lib/channel/types.ts";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { useStore } from "zustand";
 
 const ChannelContext = createContext<Channel | null>(null);
@@ -9,7 +10,11 @@ export function ChannelProvider({ children, channelId, selfName }: Readonly<{ ch
 	const [channel, setChannel] = useState<Channel | null>(null);
 
 	useEffect(() => {
-		const next = createChannel({ channelId, selfName });
+		const next = createChannel({
+			channelId,
+			selfName,
+			onJoinError: (error) => toast.error("Could not join channel", { description: error }),
+		});
 		setChannel(next);
 
 		return () => {

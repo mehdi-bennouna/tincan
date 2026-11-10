@@ -1,6 +1,7 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { Toaster } from "#/components/ui/sonner.tsx";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -19,6 +20,8 @@ function RootDocument({ children }: Readonly<{ children: React.ReactNode }>) {
 			</head>
 			<body>
 				{children}
+				<Toaster theme="dark" />
+
 				<TanStackDevtools
 					config={{ position: "bottom-right" }}
 					plugins={[{ name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> }]}

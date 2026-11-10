@@ -3,7 +3,23 @@ import { Button } from "#/components/ui/button.tsx";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "#/components/ui/card.tsx";
 import { useChannel, useChannelState } from "#/providers/channel-provider.tsx";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
+
+function voiceErrorMessage(e: unknown) {
+	if (!(e instanceof DOMException)) return "Something went wrong while accessing the microphone.";
+
+	switch (e.name) {
+		case "NotAllowedError":
+			return "Microphone access was denied. Allow it in your browser settings and try again.";
+		case "NotFoundError":
+			return "No microphone was found.";
+		case "NotReadableError":
+			return "Your microphone is being used by another app.";
+		default:
+			return e.message;
+	}
+}
 
 function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
 	return (
@@ -54,6 +70,7 @@ export function PeersList({ togglePeersListVisible }: Readonly<{ togglePeersList
 						onClick={() => {
 							channel.joinVoice().catch((e: unknown) => {
 								console.error("could not join voice", e);
+								toast.error("Could not join voice", { description: voiceErrorMessage(e) });
 							});
 						}}
 					>

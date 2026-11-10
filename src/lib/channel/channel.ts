@@ -8,6 +8,7 @@ import { createStore, type StoreApi } from "zustand";
 export type CreateChannelOptions = {
 	channelId: string;
 	selfName: string;
+	onJoinError?: (error: string) => void;
 };
 
 export type Channel = {
@@ -18,7 +19,7 @@ export type Channel = {
 	destroy: () => void;
 };
 
-export function createChannel({ channelId, selfName }: CreateChannelOptions): Channel {
+export function createChannel({ channelId, selfName, onJoinError }: CreateChannelOptions): Channel {
 	const store = createStore<ChannelState>()(() => ({
 		id: channelId,
 		selfId,
@@ -37,6 +38,7 @@ export function createChannel({ channelId, selfName }: CreateChannelOptions): Ch
 		{
 			onJoinError: (e) => {
 				console.error("channel join error", e);
+				onJoinError?.(e.error);
 			},
 		},
 	);
