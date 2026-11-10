@@ -14,6 +14,7 @@ import {
 } from "#/components/ui/message-scroller.tsx";
 import { Message, MessageContent } from "#/components/ui/message.tsx";
 import { type TextItem, type TimelineItem } from "#/lib/channel/types.ts";
+import { isDefaultRelay, relayToHash, type RelayConfig } from "#/lib/relay.ts";
 import { useChannel, useChannelState, useDisplayNames } from "#/providers/channel-provider.tsx";
 import { type } from "arktype";
 import { Link, Send, Users } from "lucide-react";
@@ -54,21 +55,22 @@ function TextEntry({ item, isMe, name, grouped }: Readonly<{ item: TextItem; isM
 	);
 }
 
-function copyInviteLink(channelId: string) {
-	const url = `${window.location.origin}/channels/${encodeURIComponent(channelId)}`;
+function copyInviteLink(channelId: string, relay: RelayConfig) {
+	const base = `${window.location.origin}/channels/${encodeURIComponent(channelId)}`;
+	const url = isDefaultRelay(relay) ? base : `${base}#${relayToHash(relay)}`;
 	navigator.clipboard.writeText(url).then(
 		() => toast.success("Invite link copied"),
 		() => toast.error("Could not copy the invite link", { description: url }),
 	);
 }
 
-function EmptyTimeline({ alone, channelId }: Readonly<{ alone: boolean; channelId: string }>) {
+function EmptyTimeline({ alone, channelId, relay }: Readonly<{ alone: boolean; channelId: string; relay: RelayConfig }>) {
 	return (
 		<div className="m-auto flex flex-col items-center gap-3 text-center text-muted-foreground text-sm">
 			{alone ? (
 				<>
 					<p>You're the only one here. Share the invite link to bring someone in.</p>
-					<Button onClick={() => copyInviteLink(channelId)}>
+					<Button onClick={() => copyInviteLink(channelId, relay)}>
 						<Link /> Copy invite link
 					</Button>
 				</>
@@ -138,7 +140,7 @@ export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisib
 			<CardHeader className="flex justify-between border-b">
 				<CardTitle>Chat</CardTitle>
 				<div className="flex gap-2">
-					<Button size="icon" onClick={() => copyInviteLink(channelId)} aria-label="Copy invite link">
+					<Button size="icon" onClick={() => copyInviteLink(channelId, channel.relay)} aria-label="Copy invite link">
 						<Link />
 					</Button>
 					<Button size="icon" onClick={togglePeersListVisible} className="md:hidden">
@@ -152,7 +154,7 @@ export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisib
 					<MessageScroller>
 						<MessageScrollerViewport>
 							<MessageScrollerContent>
-								{timeline.length === 0 && <EmptyTimeline alone={alone} channelId={channelId} />}
+								{timeline.length === 0 && <EmptyTimeline alone={alone} channelId={channelId} relay={channel.relay} />}
 								{timeline.map((item, i) => {
 									const grouped = continuesGroup(timeline[i - 1], item);
 									return (

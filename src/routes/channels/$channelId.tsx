@@ -1,11 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLocation } from "@tanstack/react-router";
 import { Chat } from "#/components/channel/chat.tsx";
 import { JoinRoomCard } from "#/components/channel/join-room-card.tsx";
 import { PeersList } from "#/components/channel/peers-list.tsx";
 import { useUnreadTitle } from "#/hooks/use-unread-title.ts";
+import { getDefaultRelay, relayFromHash, useSavedRelay } from "#/lib/relay.ts";
 import { useSavedUsername } from "#/lib/username.ts";
 import { ChannelProvider } from "#/providers/channel-provider.tsx";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/channels/$channelId")({
 	component: RouteComponent,
@@ -13,20 +14,25 @@ export const Route = createFileRoute("/channels/$channelId")({
 
 function RouteComponent() {
 	const { channelId } = Route.useParams();
+	const hash = useLocation({ select: (l) => l.hash });
+	const linkRelay = useMemo(() => relayFromHash(hash), [hash]);
+	const savedRelay = useSavedRelay();
 	const username = useSavedUsername();
 
-	if (username === undefined) return null;
+	if (username === undefined || savedRelay === undefined) return null;
 
-	if (username === null) {
+	const relay = linkRelay ?? savedRelay ?? getDefaultRelay();
+
+	if (username === null || relay === null) {
 		return (
 			<div className="flex items-center justify-center h-dvh w-dvw">
-				<JoinRoomCard channelId={channelId} />
+				<JoinRoomCard channelId={channelId} linkRelay={linkRelay} />
 			</div>
 		);
 	}
 
 	return (
-		<ChannelProvider channelId={channelId} selfName={username}>
+		<ChannelProvider channelId={channelId} selfName={username} relay={relay}>
 			<Page />
 		</ChannelProvider>
 	);

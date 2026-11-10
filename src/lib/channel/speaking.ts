@@ -11,7 +11,6 @@ type Monitor = {
 };
 
 export type SpeakingDetector = {
-	// must first be called from a user gesture so the AudioContext is allowed to start
 	ensureContext: () => void;
 	monitor: (id: string, stream: MediaStream) => void;
 	unmonitor: (id: string) => void;

@@ -2,17 +2,20 @@ import { joinRoom, selfId } from "@trystero-p2p/supabase";
 import { AnnouncePayload, TextPayload } from "#/lib/channel/protocol.ts";
 import { type ChannelState, type Member, type TimelineItem } from "#/lib/channel/types.ts";
 import { createVoice } from "#/lib/channel/voice.ts";
+import { type RelayConfig } from "#/lib/relay.ts";
 import { type } from "arktype";
 import { createStore, type StoreApi } from "zustand";
 
 export type CreateChannelOptions = {
 	channelId: string;
 	selfName: string;
+	relay: RelayConfig;
 	onJoinError?: (error: string) => void;
 };
 
 export type Channel = {
 	store: StoreApi<ChannelState>;
+	relay: RelayConfig;
 	sendText: (text: string) => void;
 	joinVoice: () => Promise<void>;
 	leaveVoice: () => void;
@@ -21,7 +24,7 @@ export type Channel = {
 	destroy: () => void;
 };
 
-export function createChannel({ channelId, selfName, onJoinError }: CreateChannelOptions): Channel {
+export function createChannel({ channelId, selfName, relay, onJoinError }: CreateChannelOptions): Channel {
 	const store = createStore<ChannelState>()(() => ({
 		id: channelId,
 		selfId,
@@ -34,8 +37,8 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 
 	const room = joinRoom(
 		{
-			appId: import.meta.env.VITE_APP_ID,
-			relayConfig: { supabaseKey: import.meta.env.VITE_APP_PUBLIC_KEY },
+			appId: relay.url,
+			relayConfig: { supabaseKey: relay.key },
 		},
 		channelId,
 		{
@@ -192,10 +195,9 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 	function destroy() {
 		if (destroyed) return;
 		destroyed = true;
-		// peers see onPeerLeave, which also clears our voice state on their side
 		voice.destroy();
 		room.leave();
 	}
 
-	return { store, sendText, joinVoice, leaveVoice, setMuted, setName, destroy };
+	return { store, relay, sendText, joinVoice, leaveVoice, setMuted, setName, destroy };
 }

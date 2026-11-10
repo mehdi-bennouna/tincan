@@ -1,21 +1,27 @@
 import { createChannel, type Channel } from "#/lib/channel/channel.ts";
 import { getDisplayNames } from "#/lib/channel/names.ts";
 import { type ChannelState } from "#/lib/channel/types.ts";
+import { type RelayConfig } from "#/lib/relay.ts";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useStore } from "zustand";
 
 const ChannelContext = createContext<Channel | null>(null);
 
-export function ChannelProvider({ children, channelId, selfName }: Readonly<{ children: ReactNode; channelId: string; selfName: string }>) {
+export function ChannelProvider({
+	children,
+	channelId,
+	selfName,
+	relay,
+}: Readonly<{ children: ReactNode; channelId: string; selfName: string; relay: RelayConfig }>) {
 	const [channel, setChannel] = useState<Channel | null>(null);
 
-	// selfName is only the initial name here; later changes go through setName below
-	// so renaming doesn't reconnect and wipe the chat
+	const { url: relayUrl, key: relayKey } = relay;
 	useEffect(() => {
 		const next = createChannel({
 			channelId,
 			selfName,
+			relay: { url: relayUrl, key: relayKey },
 			onJoinError: (error) => toast.error("Could not join channel", { description: error }),
 		});
 		setChannel(next);
@@ -24,7 +30,7 @@ export function ChannelProvider({ children, channelId, selfName }: Readonly<{ ch
 			next.destroy();
 			setChannel(null);
 		};
-	}, [channelId]);
+	}, [channelId, relayUrl, relayKey]);
 
 	useEffect(() => {
 		channel?.setName(selfName);

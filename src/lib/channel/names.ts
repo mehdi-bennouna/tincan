@@ -4,8 +4,6 @@ export function shortId(id: string) {
 	return id.slice(0, 4);
 }
 
-// Names are self-declared and can't be enforced unique without a server, so
-// members sharing a name with another online member get a short id suffix.
 export function getDisplayNames(members: ChannelState["members"]): Record<string, string> {
 	const onlineCounts = new Map<string, number>();
 	for (const m of Object.values(members)) {

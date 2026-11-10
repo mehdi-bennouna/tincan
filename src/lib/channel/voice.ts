@@ -6,7 +6,6 @@ type Room = ReturnType<typeof joinRoom>;
 export type Voice = {
 	isActive: () => boolean;
 	isMuted: () => boolean;
-	// persists across leave/join, like a mute toggle in most voice apps
 	setMuted: (muted: boolean) => void;
 	join: () => Promise<boolean>;
 	leave: () => void;
