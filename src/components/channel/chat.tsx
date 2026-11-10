@@ -1,5 +1,4 @@
 import { useForm } from "@tanstack/react-form";
-import { selfId } from "@trystero-p2p/supabase";
 import { Bubble, BubbleContent } from "#/components/ui/bubble.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "#/components/ui/card.tsx";
@@ -14,8 +13,8 @@ import {
 	MessageScrollerViewport,
 } from "#/components/ui/message-scroller.tsx";
 import { Message, MessageContent } from "#/components/ui/message.tsx";
-import { type ChannelClient } from "#/lib/webrtc/channel-client.ts";
-import { useChannelStore, type ChannelStore } from "#/providers/channel-provider.tsx";
+import { type ChannelState, type TimelineItem } from "#/lib/channel/types.ts";
+import { useChannel, useChannelState } from "#/providers/channel-provider.tsx";
 import { type } from "arktype";
 import { Send, Users } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -24,14 +23,42 @@ const SendChatFormSchema = type({
 	text: "string > 0",
 });
 
-export function Chat({ client, togglePeersListVisible }: Readonly<{ client: ChannelClient; togglePeersListVisible: () => void }>) {
-	const { messages, peerFromPeerId } = useChannelStore<{
-		messages: ChannelStore["messages"];
-		peerFromPeerId: ChannelStore["peerFromPeerId"];
-	}>(
+function TimelineEntry({ item, selfId, members }: Readonly<{ item: TimelineItem; selfId: string; members: ChannelState["members"] }>) {
+	switch (item.kind) {
+		case "text": {
+			const isMe = item.authorId === selfId;
+			return (
+				<Message align={isMe ? "end" : "start"}>
+					<MessageContent>
+						<span className={`text-muted-foreground text-xs ${isMe ? "self-end" : "self-start"}`}>
+							{members[item.authorId]?.name ?? item.authorName}
+						</span>
+						<Bubble>
+							<BubbleContent className="whitespace-pre-wrap wrap-break-word">{item.text}</BubbleContent>
+						</Bubble>
+					</MessageContent>
+				</Message>
+			);
+		}
+		case "member-joined":
+		case "member-left":
+			return (
+				<p className="text-muted-foreground text-center text-xs">
+					{members[item.memberId]?.name ?? "Someone"} {item.kind === "member-joined" ? "joined" : "left"}
+				</p>
+			);
+		case "file":
+			return null;
+	}
+}
+
+export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisible: () => void }>) {
+	const channel = useChannel();
+	const { selfId, members, timeline } = useChannelState(
 		useShallow((s) => ({
-			messages: s.messages,
-			peerFromPeerId: s.peerFromPeerId,
+			selfId: s.selfId,
+			members: s.members,
+			timeline: s.timeline,
 		})),
 	);
 
@@ -43,7 +70,7 @@ export function Chat({ client, togglePeersListVisible }: Readonly<{ client: Chan
 			onSubmit: SendChatFormSchema,
 		},
 		onSubmit: ({ value, formApi }) => {
-			client.sendChannelMessage({ text: value.text });
+			channel.sendText(value.text);
 			formApi.reset();
 		},
 	});
@@ -62,32 +89,11 @@ export function Chat({ client, togglePeersListVisible }: Readonly<{ client: Chan
 					<MessageScroller>
 						<MessageScrollerViewport>
 							<MessageScrollerContent>
-								{messages.map((message) => {
-									const isMe = message.authorId === selfId;
-
-									if (message.type === "text") {
-										return (
-											<MessageScrollerItem key={message.id} messageId={message.id}>
-												<Message align={isMe ? "end" : "start"}>
-													<MessageContent>
-														<span
-															className={`text-muted-foreground text-xs ${isMe ? "self-end" : "self-start"}`}
-														>
-															{peerFromPeerId(message.authorId).name}
-														</span>
-														<Bubble>
-															<BubbleContent className="whitespace-pre-wrap wrap-break-word">
-																{message.text}
-															</BubbleContent>
-														</Bubble>
-													</MessageContent>
-												</Message>
-											</MessageScrollerItem>
-										);
-									}
-
-									return null;
-								})}
+								{timeline.map((item) => (
+									<MessageScrollerItem key={item.id} messageId={item.id}>
+										<TimelineEntry item={item} selfId={selfId} members={members} />
+									</MessageScrollerItem>
+								))}
 							</MessageScrollerContent>
 						</MessageScrollerViewport>
 						<MessageScrollerButton />

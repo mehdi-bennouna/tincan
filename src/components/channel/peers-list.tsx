@@ -1,8 +1,7 @@
-import { selfId } from "@trystero-p2p/supabase";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "#/components/ui/button.tsx";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "#/components/ui/card.tsx";
-import { type ChannelClient } from "#/lib/webrtc/channel-client.ts";
-import { useChannelStore, type ChannelPeer, type ChannelStore } from "#/providers/channel-provider.tsx";
+import { useChannel, useChannelState } from "#/providers/channel-provider.tsx";
 import { X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
@@ -15,18 +14,19 @@ function Peer({ id, name }: Readonly<{ id: string; name: string }>) {
 	);
 }
 
-export function PeersList({ client, togglePeersListVisible }: Readonly<{ client: ChannelClient; togglePeersListVisible: () => void }>) {
-	const { localPeer, peers } = useChannelStore<{
-		localPeer: ChannelPeer | undefined;
-		peers: ChannelStore["peers"];
-	}>(
+export function PeersList({ togglePeersListVisible }: Readonly<{ togglePeersListVisible: () => void }>) {
+	const channel = useChannel();
+	const navigate = useNavigate();
+	const { self, members } = useChannelState(
 		useShallow((s) => ({
-			localPeer: s.peers[selfId],
-			peers: s.peers,
+			self: s.members[s.selfId],
+			members: s.members,
 		})),
 	);
 
-	if (!localPeer) return null;
+	if (!self) return null;
+
+	const online = Object.values(members).filter((m) => m.presence === "online");
 
 	return (
 		<Card className="flex h-full flex-col gap-0">
@@ -38,22 +38,29 @@ export function PeersList({ client, togglePeersListVisible }: Readonly<{ client:
 			</CardHeader>
 
 			<CardContent className="min-h-0 flex-1 p-0">
-				{Object.entries(peers).map(([id, p]) => (
-					<Peer key={id} id={id} name={p.name} />
+				{online.map((m) => (
+					<Peer key={m.id} id={m.id} name={m.name} />
 				))}
 			</CardContent>
 
 			<CardFooter className="flex-col gap-3">
-				{localPeer.inVoice ? (
-					<Button className="w-full" onClick={() => client.leaveVoice()}>
+				{self.inVoice ? (
+					<Button className="w-full" onClick={() => channel.leaveVoice()}>
 						Leave Voice
 					</Button>
 				) : (
-					<Button className="w-full" onClick={() => client.joinVoice()}>
+					<Button
+						className="w-full"
+						onClick={() => {
+							channel.joinVoice().catch((e: unknown) => {
+								console.error("could not join voice", e);
+							});
+						}}
+					>
 						Join Voice
 					</Button>
 				)}
-				<Button className="w-full" variant="destructive" onClick={() => client.leaveChannel()}>
+				<Button className="w-full" variant="destructive" onClick={() => navigate({ to: "/" })}>
 					Leave channel
 				</Button>
 			</CardFooter>

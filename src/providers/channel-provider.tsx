@@ -1,94 +1,37 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
-import { createStore, useStore, type StoreApi } from "zustand";
+import { createChannel, type Channel } from "#/lib/channel/channel.ts";
+import { type ChannelState } from "#/lib/channel/types.ts";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useStore } from "zustand";
 
+const ChannelContext = createContext<Channel | null>(null);
 
-export type ChannelPeer = {
-	id: string;
-	name: string;
-	inVoice: boolean;
-};
+export function ChannelProvider({ children, channelId, selfName }: Readonly<{ children: ReactNode; channelId: string; selfName: string }>) {
+	const [channel, setChannel] = useState<Channel | null>(null);
 
-export type BaseMessage = {
-	id: string;
-	authorId: string;
-	timestamp: number;
-};
+	useEffect(() => {
+		const next = createChannel({ channelId, selfName });
+		setChannel(next);
 
-export type TextMessage = BaseMessage & {
-	type: "text";
-	text: string;
-};
+		return () => {
+			next.destroy();
+			setChannel(null);
+		};
+	}, [channelId, selfName]);
 
-export type FileMessage = BaseMessage & {
-	type: "file";
-	file: {
-		name: string;
-		url: string;
-		size: number; // bytes
-		mimeType: string;
-	};
-};
+	if (!channel) return null;
 
-export type ChannelMessage = TextMessage | FileMessage;
-
-export type ChannelStore = {
-	id: string;
-	peers: Record<string, ChannelPeer>;
-	messages: Array<ChannelMessage>;
-
-	upsertPeer: (peerId: string, peer: ChannelPeer) => void;
-	removePeer: (peerId: string) => void;
-	addMessage: (messageId: ChannelMessage) => void;
-	peerFromPeerId: (peerId: string) => ChannelPeer;
-	reset: () => void;
-};
-
-type ChannelInit = { id: string };
-
-const baseState = {
-	peers: {},
-	messages: [],
-};
-
-function createChannelStore({ id }: ChannelInit) {
-	return createStore<ChannelStore>()((set, get) => ({
-		id,
-		...baseState,
-		upsertPeer: (peerId, peer) => {
-			set((s) => ({ peers: { ...s.peers, [peerId]: peer } }));
-		},
-		removePeer: (peerId) => {
-			set((s) => {
-				const { [peerId]: _, ...rest } = s.peers;
-				return { peers: rest };
-			});
-		},
-		addMessage: (message: ChannelMessage) => {
-			set((s) => ({ ...s, messages: [...s.messages, message] }));
-		},
-		peerFromPeerId: (peerId: string) => {
-			return get().peers[peerId];
-		},
-
-		reset: () => {
-			set((s) => ({ id: s.id, baseState }));
-		},
-	}));
+	return <ChannelContext.Provider value={channel}>{children}</ChannelContext.Provider>;
 }
 
-const ChannelContext = createContext<StoreApi<ChannelStore> | null>(null);
-
-export function ChannelProvider({ children, channelId }: Readonly<{ children: ReactNode; channelId: string }>) {
-	const [store] = useState(() => createChannelStore({ id: channelId }));
-
-	return <ChannelContext.Provider value={store}>{children}</ChannelContext.Provider>;
-}
-
-export function useChannelStore<T>(selector: (state: ChannelStore) => T): T {
-	const store = useContext(ChannelContext);
-	if (!store) {
+export function useChannel(): Channel {
+	const channel = useContext(ChannelContext);
+	if (!channel) {
 		throw new Error("useChannel must be used within a <ChannelProvider>");
 	}
 
-	return useStore(store, selector);
+	return channel;
+}
+
+export function useChannelState<T>(selector: (state: ChannelState) => T): T {
+	return useStore(useChannel().store, selector);
 }
