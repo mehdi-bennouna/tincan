@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button } from "#/components/ui/button.tsx";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "#/components/ui/card.tsx";
 import { useChannel, useChannelState, useDisplayNames } from "#/providers/channel-provider.tsx";
-import { Headphones, X } from "lucide-react";
+import { Headphones, Mic, MicOff, X } from "lucide-react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
@@ -21,14 +21,21 @@ function voiceErrorMessage(e: unknown) {
 	}
 }
 
-function Peer({ id, name, inVoice, speaking }: Readonly<{ id: string; name: string; inVoice: boolean; speaking: boolean }>) {
+function Peer({
+	id,
+	name,
+	inVoice,
+	muted,
+	speaking,
+}: Readonly<{ id: string; name: string; inVoice: boolean; muted: boolean; speaking: boolean }>) {
 	return (
 		<div className="flex items-center justify-between gap-2 border-b w-full p-4">
 			<div className="flex min-w-0 flex-col gap-2">
 				<p className="font-semibold">{name}</p>
 				<p className="font-light truncate">{id}</p>
 			</div>
-			{inVoice && (
+			{inVoice && muted && <MicOff aria-label="Muted" className="size-4 shrink-0 text-destructive" />}
+			{inVoice && !muted && (
 				<Headphones
 					aria-label={speaking ? "Speaking" : "In voice"}
 					className={`size-4 shrink-0 transition-colors ${speaking ? "text-green-500" : "text-muted-foreground"}`}
@@ -65,15 +72,33 @@ export function PeersList({ togglePeersListVisible }: Readonly<{ togglePeersList
 
 			<CardContent className="min-h-0 flex-1 p-0">
 				{online.map((m) => (
-					<Peer key={m.id} id={m.id} name={names[m.id] ?? m.name} inVoice={m.inVoice} speaking={speaking[m.id] ?? false} />
+					<Peer
+						key={m.id}
+						id={m.id}
+						name={names[m.id] ?? m.name}
+						inVoice={m.inVoice}
+						muted={m.muted}
+						speaking={speaking[m.id] ?? false}
+					/>
 				))}
 			</CardContent>
 
 			<CardFooter className="flex-col gap-3">
 				{self.inVoice ? (
-					<Button className="w-full" onClick={() => channel.leaveVoice()}>
-						Leave Voice
-					</Button>
+					<div className="flex w-full gap-3">
+						<Button
+							size="icon"
+							variant={self.muted ? "destructive" : "default"}
+							onClick={() => channel.setMuted(!self.muted)}
+							aria-label={self.muted ? "Unmute" : "Mute"}
+							aria-pressed={self.muted}
+						>
+							{self.muted ? <MicOff /> : <Mic />}
+						</Button>
+						<Button className="flex-1" onClick={() => channel.leaveVoice()}>
+							Leave Voice
+						</Button>
+					</div>
 				) : (
 					<Button
 						className="w-full"

@@ -1,8 +1,9 @@
 import { type } from "arktype";
 
 export const AnnouncePayload = type({
-	name: "string > 0",
-	inVoice: "boolean",
+	"name": "string > 0",
+	"inVoice": "boolean",
+	"muted?": "boolean",
 });
 export type AnnouncePayload = typeof AnnouncePayload.infer;
 

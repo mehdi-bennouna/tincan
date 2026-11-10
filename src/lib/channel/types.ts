@@ -3,6 +3,7 @@ export type Member = {
 	name: string;
 	presence: "online" | "offline";
 	inVoice: boolean;
+	muted: boolean;
 	lastSeen: number;
 };
 

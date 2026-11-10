@@ -16,6 +16,7 @@ export type Channel = {
 	sendText: (text: string) => void;
 	joinVoice: () => Promise<void>;
 	leaveVoice: () => void;
+	setMuted: (muted: boolean) => void;
 	destroy: () => void;
 };
 
@@ -24,7 +25,7 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 		id: channelId,
 		selfId,
 		members: {
-			[selfId]: { id: selfId, name: selfName, presence: "online", inVoice: false, lastSeen: Date.now() },
+			[selfId]: { id: selfId, name: selfName, presence: "online", inVoice: false, muted: false, lastSeen: Date.now() },
 		},
 		timeline: [],
 		speaking: {},
@@ -59,13 +60,13 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 	let destroyed = false;
 
 	function announceSelf(target?: string) {
-		announceAction.send({ name: selfName, inVoice: voice.isActive() }, target ? { target } : undefined);
+		announceAction.send({ name: selfName, inVoice: voice.isActive(), muted: voice.isMuted() }, target ? { target } : undefined);
 	}
 
-	function setSelfInVoice(inVoice: boolean) {
+	function syncSelfVoiceState() {
 		store.setState((s) => {
 			const self = s.members[selfId];
-			return self ? { members: { ...s.members, [selfId]: { ...self, inVoice } } } : {};
+			return self ? { members: { ...s.members, [selfId]: { ...self, inVoice: voice.isActive(), muted: voice.isMuted() } } } : {};
 		});
 		announceSelf();
 	}
@@ -104,7 +105,14 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 		store.setState((s) => {
 			const now = Date.now();
 			const wasOnline = s.members[peerId]?.presence === "online";
-			const member: Member = { id: peerId, name: payload.name, presence: "online", inVoice: payload.inVoice, lastSeen: now };
+			const member: Member = {
+				id: peerId,
+				name: payload.name,
+				presence: "online",
+				inVoice: payload.inVoice,
+				muted: payload.muted ?? false,
+				lastSeen: now,
+			};
 			return {
 				members: { ...s.members, [peerId]: member },
 				timeline: wasOnline
@@ -134,12 +142,17 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 	}
 
 	async function joinVoice() {
-		if (await voice.join()) setSelfInVoice(true);
+		if (await voice.join()) syncSelfVoiceState();
 	}
 
 	function leaveVoice() {
 		voice.leave();
-		setSelfInVoice(false);
+		syncSelfVoiceState();
+	}
+
+	function setMuted(muted: boolean) {
+		voice.setMuted(muted);
+		syncSelfVoiceState();
 	}
 
 	function destroy() {
@@ -150,5 +163,5 @@ export function createChannel({ channelId, selfName, onJoinError }: CreateChanne
 		room.leave();
 	}
 
-	return { store, sendText, joinVoice, leaveVoice, destroy };
+	return { store, sendText, joinVoice, leaveVoice, setMuted, destroy };
 }

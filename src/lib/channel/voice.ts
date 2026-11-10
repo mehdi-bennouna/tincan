@@ -5,6 +5,9 @@ type Room = ReturnType<typeof joinRoom>;
 
 export type Voice = {
 	isActive: () => boolean;
+	isMuted: () => boolean;
+	// persists across leave/join, like a mute toggle in most voice apps
+	setMuted: (muted: boolean) => void;
 	join: () => Promise<boolean>;
 	leave: () => void;
 	handlePeerJoin: (peerId: string) => void;
@@ -22,6 +25,7 @@ export type CreateVoiceOptions = {
 export function createVoice(room: Room, { selfId, onSpeakingChange }: CreateVoiceOptions): Voice {
 	let localStream: MediaStream | null = null;
 	let attempt = 0;
+	let muted = false;
 	const remoteStreams = new Map<string, MediaStream>();
 	const remoteAudio = new Map<string, HTMLAudioElement>();
 	const speaking = createSpeakingDetector(onSpeakingChange);
@@ -51,6 +55,15 @@ export function createVoice(room: Room, { selfId, onSpeakingChange }: CreateVoic
 		return localStream !== null;
 	}
 
+	function isMuted() {
+		return muted;
+	}
+
+	function setMuted(next: boolean) {
+		muted = next;
+		localStream?.getAudioTracks().forEach((t) => (t.enabled = !muted));
+	}
+
 	async function join() {
 		if (localStream) return true;
 		const current = ++attempt;
@@ -66,6 +79,7 @@ export function createVoice(room: Room, { selfId, onSpeakingChange }: CreateVoic
 		}
 
 		localStream = stream;
+		setMuted(muted);
 		room.addStream(stream);
 		speaking.monitor(selfId, stream);
 		for (const [peerId, s] of remoteStreams) attach(peerId, s);
@@ -111,5 +125,5 @@ export function createVoice(room: Room, { selfId, onSpeakingChange }: CreateVoic
 		remoteAudio.clear();
 	}
 
-	return { isActive, join, leave, handlePeerJoin, handlePeerStream, handlePeerLeftVoice, handlePeerLeave, destroy };
+	return { isActive, isMuted, setMuted, join, leave, handlePeerJoin, handlePeerStream, handlePeerLeftVoice, handlePeerLeave, destroy };
 }
