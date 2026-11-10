@@ -9,6 +9,7 @@
 	"scripts": {
 		"build": "vite build",
 		"check": "prettier --check .",
+		"deploy": "NITRO_PRESET=cloudflare_module vite build && wrangler deploy",
 		"dev": "vite dev --port 3000",
 		"format": "prettier --write . && eslint --fix",
 		"generate-routes": "tsr generate",
@@ -55,6 +56,7 @@
 		"prettier": "^3.8.1",
 		"prettier-plugin-packagejson": "^3.0.2",
 		"typescript": "^6.0.2",
-		"vite": "^8.0.0"
+		"vite": "^8.0.0",
+		"wrangler": "^4.158.0"
 	}
 }

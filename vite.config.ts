@@ -7,7 +7,24 @@ import { defineConfig } from "vite";
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
-	plugins: [devtools(), nitro({ rollupConfig: { external: [/^@sentry\//] } }), tailwindcss(), tanstackStart(), viteReact()],
+	plugins: [
+		devtools(),
+		nitro({
+			rollupConfig: { external: [/^@sentry\//] },
+			compatibilityDate: "2026-11-10",
+			cloudflare: {
+				deployConfig: true,
+				nodeCompat: true,
+				wrangler: {
+					name: "tincan",
+					routes: [{ pattern: "tincan.mehdi-bennouna.com", custom_domain: true }],
+				},
+			},
+		}),
+		tailwindcss(),
+		tanstackStart(),
+		viteReact(),
+	],
 });
 
 export default config;
