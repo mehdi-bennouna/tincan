@@ -13,7 +13,7 @@ import {
 	MessageScrollerViewport,
 } from "#/components/ui/message-scroller.tsx";
 import { Message, MessageContent } from "#/components/ui/message.tsx";
-import { type TimelineItem } from "#/lib/channel/types.ts";
+import { type TextItem, type TimelineItem } from "#/lib/channel/types.ts";
 import { useChannel, useChannelState, useDisplayNames } from "#/providers/channel-provider.tsx";
 import { type } from "arktype";
 import { Link, Send, Users } from "lucide-react";
@@ -24,6 +24,36 @@ const SendChatFormSchema = type({
 	text: "string > 0",
 });
 
+const GROUP_WINDOW_MS = 5 * 60 * 1000;
+const timeFormat = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
+const dateTimeFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+function formatTime(at: number) {
+	const date = new Date(at);
+	return date.toDateString() === new Date().toDateString() ? timeFormat.format(date) : dateTimeFormat.format(date);
+}
+
+function continuesGroup(prev: TimelineItem | undefined, item: TimelineItem) {
+	return item.kind === "text" && prev?.kind === "text" && prev.authorId === item.authorId && item.at - prev.at < GROUP_WINDOW_MS;
+}
+
+function TextEntry({ item, isMe, name, grouped }: Readonly<{ item: TextItem; isMe: boolean; name: string; grouped: boolean }>) {
+	return (
+		<Message align={isMe ? "end" : "start"}>
+			<MessageContent>
+				{!grouped && (
+					<span className={`text-muted-foreground text-xs ${isMe ? "self-end" : "self-start"}`}>
+						{name} · <time dateTime={new Date(item.at).toISOString()}>{formatTime(item.at)}</time>
+					</span>
+				)}
+				<Bubble title={dateTimeFormat.format(item.at)}>
+					<BubbleContent className="whitespace-pre-wrap wrap-break-word">{item.text}</BubbleContent>
+				</Bubble>
+			</MessageContent>
+		</Message>
+	);
+}
+
 function copyInviteLink(channelId: string) {
 	const url = `${window.location.origin}/channels/${encodeURIComponent(channelId)}`;
 	navigator.clipboard.writeText(url).then(
@@ -32,23 +62,17 @@ function copyInviteLink(channelId: string) {
 	);
 }
 
-function TimelineEntry({ item, selfId, names }: Readonly<{ item: TimelineItem; selfId: string; names: Record<string, string> }>) {
+function TimelineEntry({
+	item,
+	selfId,
+	names,
+	grouped,
+}: Readonly<{ item: TimelineItem; selfId: string; names: Record<string, string>; grouped: boolean }>) {
 	switch (item.kind) {
-		case "text": {
-			const isMe = item.authorId === selfId;
+		case "text":
 			return (
-				<Message align={isMe ? "end" : "start"}>
-					<MessageContent>
-						<span className={`text-muted-foreground text-xs ${isMe ? "self-end" : "self-start"}`}>
-							{names[item.authorId] ?? item.authorName}
-						</span>
-						<Bubble>
-							<BubbleContent className="whitespace-pre-wrap wrap-break-word">{item.text}</BubbleContent>
-						</Bubble>
-					</MessageContent>
-				</Message>
+				<TextEntry item={item} isMe={item.authorId === selfId} name={names[item.authorId] ?? item.authorName} grouped={grouped} />
 			);
-		}
 		case "member-joined":
 		case "member-left":
 			return (
@@ -104,11 +128,14 @@ export function Chat({ togglePeersListVisible }: Readonly<{ togglePeersListVisib
 					<MessageScroller>
 						<MessageScrollerViewport>
 							<MessageScrollerContent>
-								{timeline.map((item) => (
-									<MessageScrollerItem key={item.id} messageId={item.id}>
-										<TimelineEntry item={item} selfId={selfId} names={names} />
-									</MessageScrollerItem>
-								))}
+								{timeline.map((item, i) => {
+									const grouped = continuesGroup(timeline[i - 1], item);
+									return (
+										<MessageScrollerItem key={item.id} messageId={item.id} className={grouped ? "-mt-5" : undefined}>
+											<TimelineEntry item={item} selfId={selfId} names={names} grouped={grouped} />
+										</MessageScrollerItem>
+									);
+								})}
 							</MessageScrollerContent>
 						</MessageScrollerViewport>
 						<MessageScrollerButton />
