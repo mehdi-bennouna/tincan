@@ -1,6 +1,6 @@
 import { createStoredString } from "#/lib/stored-string.ts";
 
-const stored = createStoredString("icy-link:username");
+const stored = createStoredString("tincan:username");
 
 function normalize(raw: string | null) {
 	return raw?.trim() || null;

@@ -8,7 +8,7 @@ export type RelayConfig = {
 };
 
 const RelayConfigSchema = type({ url: "string", key: "string" });
-const stored = createStoredString("icy-link:relay");
+const stored = createStoredString("tincan:relay");
 
 export function getDefaultRelay(): RelayConfig | null {
 	const url: unknown = import.meta.env.VITE_APP_ID;

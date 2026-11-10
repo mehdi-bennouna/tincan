@@ -1,5 +1,5 @@
 {
-	"projectName": "icy-link",
+	"projectName": "tincan",
 	"mode": "file-router",
 	"typescript": true,
 	"packageManager": "pnpm",

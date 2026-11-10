@@ -1,6 +1,7 @@
 {
-	"name": "icy-link",
+	"name": "tincan",
 	"private": true,
+	"repository": "github:mehdi-bennouna/tincan",
 	"type": "module",
 	"imports": {
 		"#/*": "./src/*"
